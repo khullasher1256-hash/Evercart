@@ -25,7 +25,7 @@ const path = require('path');              // Node.js path utilities
 // Initialize Express application
 const app = express();
 const PORT = process.env.PORT || 3000;
-const API_BASE_URL = process.env.API_BASE_URL || `http://localhost:${PORT}`;
+const API_BASE_URL = process.env.API_BASE_URL;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/evercart';
 const ADMIN_KEY = process.env.ADMIN_KEY || 'EVERCART_ADMIN_2025';
 const BCRYPT_SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS) || 12;
