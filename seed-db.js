@@ -21,6 +21,9 @@
 
 const mongoose = require('mongoose');
 
+// Load environment variables from .env file
+require('dotenv').config();
+
 // ============================================================================
 // DATABASE CONNECTION
 // ============================================================================
@@ -29,7 +32,9 @@ const mongoose = require('mongoose');
  * Connect to the MongoDB database
  * Uses the same connection string as the main server
  */
-mongoose.connect('mongodb://localhost:27017/evercart', {
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/evercart';
+
+mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })

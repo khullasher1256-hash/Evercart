@@ -456,7 +456,7 @@
          * @returns {Promise<Array>} Array of product objects from MongoDB
          */
         async function fetchProducts(params = {}) {
-            const url = new URL('http://localhost:3000/api/products');
+            const url = new URL(window.CONFIG.API.PRODUCTS);
             // Add non-empty parameters to URL query string
             Object.keys(params).forEach(key => {
                 if (params[key] !== '' && params[key] !== null && params[key] !== undefined) {
@@ -472,7 +472,7 @@
          * @returns {Promise<Array>} Array of category strings
          */
         async function fetchCategories() {
-            const res = await fetch('http://localhost:3000/api/categories');
+            const res = await fetch(window.CONFIG.API.CATEGORIES);
             return await res.json();
         }
 
@@ -481,7 +481,7 @@
          * @returns {Promise<Array>} Array of brand strings
          */
         async function fetchBrands() {
-            const res = await fetch('http://localhost:3000/api/brands');
+            const res = await fetch(window.CONFIG.API.BRANDS);
             return await res.json();
         }
 
@@ -652,7 +652,7 @@
                 window.location.href = 'login.html';
                 return;
             }
-            fetch('http://localhost:3000/api/cart/add', {
+            fetch(window.CONFIG.API.CART_ADD, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userEmail: user.email, productId, quantity: 1 })

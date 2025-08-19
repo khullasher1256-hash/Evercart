@@ -622,7 +622,7 @@
       btnText.textContent = 'Signing In...';
       
       try {
-        const res = await fetch('http://localhost:3000/api/login', {
+        const res = await fetch(window.CONFIG.API.LOGIN, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
@@ -707,7 +707,7 @@
       btnText.textContent = 'Creating Account...';
       
       try {
-        const res = await fetch('http://localhost:3000/api/signup', {
+        const res = await fetch(window.CONFIG.API.SIGNUP, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, password })

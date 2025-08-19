@@ -269,7 +269,7 @@
          * @returns {Promise<Array>} Array of product objects
          */
         async function fetchProducts() {
-            const res = await fetch('http://localhost:3000/api/products');
+            const res = await fetch('/api/products');
             return await res.json();
         }
 
@@ -278,7 +278,7 @@
          * @returns {Promise<Array>} Array of category strings
          */
         async function fetchCategories() {
-            const res = await fetch('http://localhost:3000/api/categories');
+            const res = await fetch('/api/categories');
             return await res.json();
         }
 
@@ -388,7 +388,7 @@
         if (user) {
             // User is logged in, fetch their cart count
             try {
-                const res = await fetch(`http://localhost:3000/api/cart?userEmail=${encodeURIComponent(user.email)}`);
+                const res = await fetch(`/api/cart?userEmail=${encodeURIComponent(user.email)}`);
                 const cart = await res.json();
                 
                 // Calculate total items in cart

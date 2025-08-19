@@ -928,10 +928,10 @@ app.delete('/api/admin/products/:id', async (req, res) => {
  */
 app.listen(PORT, () => {
   console.log('\n🚀 EverCart Server Started Successfully!');
-  console.log(`📡 Server running on: http://localhost:${PORT}`);
-  console.log(`🌐 Frontend available at: http://localhost:${PORT}`);
-  console.log(`🔧 API endpoints available at: http://localhost:${PORT}/api/*`);
-  console.log(`👨‍💼 Admin panel: http://localhost:${PORT}/admin-login.html`);
+  console.log(`📡 Server running on: ${API_BASE_URL || `http://localhost:${PORT}`}`);
+  console.log(`🌐 Frontend available at: ${API_BASE_URL || `http://localhost:${PORT}`}`);
+  console.log(`🔧 API endpoints available at: ${API_BASE_URL || `http://localhost:${PORT}`}/api/*`);
+  console.log(`👨‍💼 Admin panel: ${API_BASE_URL || `http://localhost:${PORT}`}/admin-login.html`);
   console.log('\n📊 Available API Routes:');
   console.log('   🛍️  Product browsing: GET /api/products, /api/categories, /api/brands');
   console.log('   🔐 Authentication: POST /api/login, /api/signup');

@@ -530,9 +530,9 @@
     async function loadDashboardData() {
       try {
         const [productsRes, categoriesRes, brandsRes] = await Promise.all([
-          fetch('http://localhost:3000/api/products'),
-          fetch('http://localhost:3000/api/categories'),
-          fetch('http://localhost:3000/api/brands')
+          fetch(window.CONFIG.API.PRODUCTS),
+          fetch(window.CONFIG.API.CATEGORIES),
+          fetch(window.CONFIG.API.BRANDS)
         ]);
 
         const products = await productsRes.json();
@@ -555,7 +555,7 @@
     // Product management functions
     async function loadProducts() {
       try {
-        const response = await fetch('http://localhost:3000/api/products');
+        const response = await fetch(window.CONFIG.API.PRODUCTS);
         allProducts = await response.json();
         renderProducts(allProducts);
       } catch (error) {
@@ -611,7 +611,7 @@
 
     async function editProduct(productId) {
       try {
-        const response = await fetch(`http://localhost:3000/api/products/${productId}`);
+        const response = await fetch(`${window.CONFIG.API.PRODUCTS}/${productId}`);
         const product = await response.json();
         
         if (!response.ok) {
@@ -645,7 +645,7 @@
       }
 
       try {
-        const response = await fetch(`http://localhost:3000/api/admin/products/${productId}`, {
+        const response = await fetch(`${window.CONFIG.API.ADMIN_PRODUCTS}/${productId}`, {
           method: 'DELETE',
           headers: {
             'email': currentAdmin.email
@@ -685,8 +685,8 @@
 
       try {
         const url = editingProduct 
-          ? `http://localhost:3000/api/admin/products/${editingProduct._id}`
-          : 'http://localhost:3000/api/admin/products';
+          ? `${window.CONFIG.API.ADMIN_PRODUCTS}/${editingProduct._id}`
+          : window.CONFIG.API.ADMIN_PRODUCTS;
         
         const method = editingProduct ? 'PUT' : 'POST';
 

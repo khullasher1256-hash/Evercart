@@ -547,7 +547,7 @@
       // Fetch cart data
       async function fetchCart() {
         try {
-          const res = await fetch('http://localhost:3000/api/cart?userEmail=' + encodeURIComponent(user.email));
+          const res = await fetch(window.CONFIG.API.CART_GET + '?userEmail=' + encodeURIComponent(user.email));
           cartData = await res.json();
           renderCart();
         } catch (error) {
@@ -669,7 +669,7 @@
         }
 
         try {
-          const res = await fetch('http://localhost:3000/api/cart/update', {
+          const res = await fetch(window.CONFIG.API.CART_UPDATE, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userEmail: user.email, productId, quantity: newQuantity })
@@ -696,7 +696,7 @@
         }
 
         try {
-          const res = await fetch('http://localhost:3000/api/cart/remove', {
+          const res = await fetch(window.CONFIG.API.CART_REMOVE, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userEmail: user.email, productId })
@@ -786,7 +786,7 @@
       // Clear cart after successful checkout
       async function clearCart() {
         try {
-          const response = await fetch('http://localhost:3000/api/cart/clear', {
+          const response = await fetch(window.CONFIG.API.CART_CLEAR, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userEmail: user.email })
