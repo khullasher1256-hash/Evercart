@@ -245,7 +245,7 @@
       const password = document.getElementById('admin-login-password').value;
       
       try {
-        const res = await fetch(window.CONFIG.API.ADMIN_LOGIN, {
+        const res = await fetch('/api/admin/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
@@ -276,7 +276,7 @@
       const adminKey = document.getElementById('admin-key').value;
       
       try {
-        const res = await fetch(window.CONFIG.API.ADMIN_CREATE, {
+        const res = await fetch('/api/admin/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, password, adminKey })

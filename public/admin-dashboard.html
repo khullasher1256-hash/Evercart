@@ -530,9 +530,9 @@
     async function loadDashboardData() {
       try {
         const [productsRes, categoriesRes, brandsRes] = await Promise.all([
-          fetch(window.CONFIG.API.PRODUCTS),
-          fetch(window.CONFIG.API.CATEGORIES),
-          fetch(window.CONFIG.API.BRANDS)
+          fetch('/api/products'),
+          fetch('/api/categories'),
+          fetch('/api/brands')
         ]);
 
         const products = await productsRes.json();
@@ -555,7 +555,7 @@
     // Product management functions
     async function loadProducts() {
       try {
-        const response = await fetch(window.CONFIG.API.PRODUCTS);
+        const response = await fetch('/api/products');
         allProducts = await response.json();
         renderProducts(allProducts);
       } catch (error) {
@@ -611,7 +611,7 @@
 
     async function editProduct(productId) {
       try {
-        const response = await fetch(`${window.CONFIG.API.PRODUCTS}/${productId}`);
+        const response = await fetch(`/api/products/${productId}`);
         const product = await response.json();
         
         if (!response.ok) {
@@ -645,7 +645,7 @@
       }
 
       try {
-        const response = await fetch(`${window.CONFIG.API.ADMIN_PRODUCTS}/${productId}`, {
+        const response = await fetch(`/api/admin/products/${productId}`, {
           method: 'DELETE',
           headers: {
             'email': currentAdmin.email
@@ -685,8 +685,8 @@
 
       try {
         const url = editingProduct 
-          ? `${window.CONFIG.API.ADMIN_PRODUCTS}/${editingProduct._id}`
-          : window.CONFIG.API.ADMIN_PRODUCTS;
+          ? `/api/admin/products/${editingProduct._id}`
+          : '/api/admin/products';
         
         const method = editingProduct ? 'PUT' : 'POST';
 

@@ -456,7 +456,7 @@
          * @returns {Promise<Array>} Array of product objects from MongoDB
          */
         async function fetchProducts(params = {}) {
-            const url = new URL(window.CONFIG.API.PRODUCTS);
+            const url = new URL('/api/products', window.location.origin);
             // Add non-empty parameters to URL query string
             Object.keys(params).forEach(key => {
                 if (params[key] !== '' && params[key] !== null && params[key] !== undefined) {
@@ -472,7 +472,7 @@
          * @returns {Promise<Array>} Array of category strings
          */
         async function fetchCategories() {
-            const res = await fetch(window.CONFIG.API.CATEGORIES);
+            const res = await fetch('/api/categories');
             return await res.json();
         }
 
@@ -481,7 +481,7 @@
          * @returns {Promise<Array>} Array of brand strings
          */
         async function fetchBrands() {
-            const res = await fetch(window.CONFIG.API.BRANDS);
+            const res = await fetch('/api/brands');
             return await res.json();
         }
 
@@ -652,7 +652,7 @@
                 window.location.href = 'login.html';
                 return;
             }
-            fetch(window.CONFIG.API.CART_ADD, {
+            fetch('/api/cart/add', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userEmail: user.email, productId, quantity: 1 })
@@ -691,6 +691,32 @@
             userActions.insertBefore(userNameSpan, userActions.firstChild);
             userActions.insertBefore(logoutBtn, userActions.children[2]);
         }
+        
+        // Cart count display
+        async function updateCartCount() {
+            const cartCountSpan = document.getElementById('cart-count');
+            const user = JSON.parse(localStorage.getItem('user'));
+            
+            if (user && cartCountSpan) {
+                try {
+                    const res = await fetch(`/api/cart?userEmail=${encodeURIComponent(user.email)}`);
+                    const cart = await res.json();
+                    const count = cart.items ? cart.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
+                    
+                    if (count > 0) {
+                        cartCountSpan.textContent = count;
+                        cartCountSpan.style.display = 'inline-block';
+                    } else {
+                        cartCountSpan.style.display = 'none';
+                    }
+                } catch (e) {
+                    cartCountSpan.style.display = 'none';
+                }
+            }
+        }
+        
+        // Update cart count on page load
+        await updateCartCount();
     });
     </script>
     <footer class="main-footer">
