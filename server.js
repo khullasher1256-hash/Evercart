@@ -136,6 +136,56 @@ const cartSchema = new mongoose.Schema({
 
 const Cart = mongoose.model('Cart', cartSchema);
 
+/**
+ * Order Schema - Defines the structure for order documents
+ * 
+ * @field {String} userEmail - User's email (order owner)
+ * @field {Array} items - Array of ordered items with product references, quantities, and prices
+ * @field {Number} totalAmount - Total order amount in dollars
+ * @field {String} status - Order status: 'pending', 'processing', 'shipped', 'delivered', 'cancelled'
+ * @field {Object} deliveryAddress - Delivery address information
+ * @field {String} paymentMethod - Payment method used
+ * @field {Date} orderDate - Date when order was placed
+ */
+const orderSchema = new mongoose.Schema({
+  userEmail: { type: String, required: true },
+  items: [{
+    productId: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: 'Product',
+      required: true 
+    },
+    productName: { type: String, required: true },
+    productImage: { type: String, required: true },
+    quantity: { type: Number, required: true, min: 1 },
+    price: { type: Number, required: true, min: 0 }
+  }],
+  totalAmount: { type: Number, required: true, min: 0 },
+  status: { 
+    type: String, 
+    enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'], 
+    default: 'pending' 
+  },
+  deliveryAddress: {
+    fullName: { type: String, required: true },
+    address: { type: String, required: true },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    zipCode: { type: String, required: true },
+    phone: { type: String, required: true }
+  },
+  paymentMethod: { 
+    type: String, 
+    enum: ['card', 'cash_on_delivery', 'upi'], 
+    default: 'cash_on_delivery' 
+  },
+  orderDate: { type: Date, default: Date.now }
+}, {
+  timestamps: true
+});
+
+const Order = mongoose.model('Order', orderSchema);
+
 // ============================================================================
 // STATIC FILE SERVING & ROOT ROUTE
 // ============================================================================
@@ -592,6 +642,147 @@ app.post('/api/cart/clear', async (req, res) => {
 });
 
 // ============================================================================
+// ORDER MANAGEMENT ROUTES
+// ============================================================================
+
+/**
+ * POST /api/orders
+ * Create a new order from cart items
+ * 
+ * @body {string} userEmail - User's email address
+ * @body {Object} deliveryAddress - Delivery address information
+ * @body {string} paymentMethod - Payment method ('card', 'cash_on_delivery', 'upi')
+ * 
+ * @returns {Object} Created order object
+ */
+app.post('/api/orders', async (req, res) => {
+  try {
+    const { userEmail, deliveryAddress, paymentMethod } = req.body;
+    
+    // Input validation
+    if (!userEmail || !deliveryAddress || !paymentMethod) {
+      return res.status(400).json({ message: 'User email, delivery address, and payment method are required' });
+    }
+    
+    // Validate delivery address fields
+    const { fullName, address, city, state, zipCode, phone } = deliveryAddress;
+    if (!fullName || !address || !city || !state || !zipCode || !phone) {
+      return res.status(400).json({ message: 'Complete delivery address is required' });
+    }
+    
+    // Get user's cart
+    const cart = await Cart.findOne({ userEmail }).populate('items.productId');
+    if (!cart || cart.items.length === 0) {
+      return res.status(400).json({ message: 'Cart is empty' });
+    }
+    
+    // Calculate total amount and prepare order items
+    let totalAmount = 0;
+    const orderItems = cart.items.map(item => {
+      const itemTotal = item.productId.price * item.quantity;
+      totalAmount += itemTotal;
+      
+      return {
+        productId: item.productId._id,
+        productName: item.productId.name,
+        productImage: item.productId.image,
+        quantity: item.quantity,
+        price: item.productId.price
+      };
+    });
+    
+    // Create order
+    const order = await Order.create({
+      userEmail,
+      items: orderItems,
+      totalAmount: Math.round(totalAmount * 100) / 100, // Round to 2 decimal places
+      deliveryAddress,
+      paymentMethod,
+      status: 'pending'
+    });
+    
+    // Clear the user's cart
+    cart.items = [];
+    await cart.save();
+    
+    res.status(201).json({ 
+      message: 'Order placed successfully',
+      order 
+    });
+    
+  } catch (error) {
+    console.error('Error creating order:', error);
+    res.status(500).json({ message: 'Failed to create order' });
+  }
+});
+
+/**
+ * GET /api/orders
+ * Get user's order history
+ * 
+ * @query {string} userEmail - User's email address
+ * 
+ * @returns {Array} Array of user's orders
+ */
+app.get('/api/orders', async (req, res) => {
+  try {
+    const { userEmail } = req.query;
+    
+    if (!userEmail) {
+      return res.status(400).json({ message: 'User email is required' });
+    }
+    
+    // Find orders for the user, sorted by creation date (newest first)
+    const orders = await Order.find({ userEmail })
+      .sort({ createdAt: -1 })
+      .populate('items.productId', 'name category brand');
+    
+    res.json(orders);
+    
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    res.status(500).json({ message: 'Failed to fetch orders' });
+  }
+});
+
+/**
+ * GET /api/orders/:id
+ * Get a specific order by ID
+ * 
+ * @param {string} id - Order ID
+ * @query {string} userEmail - User's email address for authorization
+ * 
+ * @returns {Object} Order details
+ */
+app.get('/api/orders/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userEmail } = req.query;
+    
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid order ID format' });
+    }
+    
+    if (!userEmail) {
+      return res.status(400).json({ message: 'User email is required' });
+    }
+    
+    const order = await Order.findOne({ _id: id, userEmail })
+      .populate('items.productId', 'name category brand');
+    
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    
+    res.json(order);
+    
+  } catch (error) {
+    console.error('Error fetching order:', error);
+    res.status(500).json({ message: 'Failed to fetch order' });
+  }
+});
+
+// ============================================================================
 // ADMIN PANEL ROUTES & MIDDLEWARE
 // ============================================================================
 
@@ -913,6 +1104,233 @@ app.delete('/api/admin/products/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting product:', error);
     res.status(500).json({ message: 'Failed to delete product' });
+  }
+});
+
+/**
+ * GET /api/admin/users
+ * Get all users (Admin only)
+ * 
+ * @header {string} email - Admin's email for verification
+ * 
+ * @returns {Array} Array of user objects (excluding passwords)
+ */
+app.get('/api/admin/users', async (req, res) => {
+  try {
+    const { email } = req.headers;
+    
+    // Admin verification
+    const user = await User.findOne({ email: email?.toLowerCase() });
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    
+    // Get all users excluding passwords
+    const users = await User.find({}).select('-password').sort({ createdAt: -1 });
+    
+    res.json(users);
+    
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ message: 'Failed to fetch users' });
+  }
+});
+
+/**
+ * PUT /api/admin/users/:id
+ * Update user details (Admin only)
+ * 
+ * @param {string} id - User's MongoDB ObjectId
+ * @body {string} email - Admin's email for verification
+ * @body {Object} userData - Updated user information
+ * 
+ * @returns {Object} Updated user object
+ */
+app.put('/api/admin/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { email, name, userEmail, role } = req.body;
+    
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid user ID format' });
+    }
+    
+    // Admin verification
+    const admin = await User.findOne({ email: email?.toLowerCase() });
+    if (!admin || admin.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    
+    // Update user
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      {
+        name: name?.trim(),
+        email: userEmail?.toLowerCase().trim(),
+        role: role
+      },
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.json({ 
+      message: 'User updated successfully', 
+      user: updatedUser 
+    });
+    
+  } catch (error) {
+    console.error('Error updating user:', error);
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
+    res.status(500).json({ message: 'Failed to update user' });
+  }
+});
+
+/**
+ * DELETE /api/admin/users/:id
+ * Delete a user (Admin only)
+ * 
+ * @param {string} id - User's MongoDB ObjectId
+ * @header {string} email - Admin's email for verification
+ * 
+ * @returns {Object} Success message
+ */
+app.delete('/api/admin/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { email } = req.headers;
+    
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid user ID format' });
+    }
+    
+    // Admin verification
+    const admin = await User.findOne({ email: email?.toLowerCase() });
+    if (!admin || admin.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    
+    // Prevent admin from deleting themselves
+    if (id === admin._id.toString()) {
+      return res.status(400).json({ message: 'Cannot delete your own admin account' });
+    }
+    
+    const deletedUser = await User.findByIdAndDelete(id);
+    if (!deletedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.json({ 
+      message: 'User deleted successfully',
+      deletedUser: {
+        id: deletedUser._id,
+        name: deletedUser.name,
+        email: deletedUser.email
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ message: 'Failed to delete user' });
+  }
+});
+
+/**
+ * GET /api/admin/orders
+ * Get all orders (Admin only)
+ * 
+ * @header {string} email - Admin's email for verification
+ * @query {string} status - Filter by order status (optional)
+ * 
+ * @returns {Array} Array of all orders
+ */
+app.get('/api/admin/orders', async (req, res) => {
+  try {
+    const { email } = req.headers;
+    const { status } = req.query;
+    
+    // Admin verification
+    const user = await User.findOne({ email: email?.toLowerCase() });
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    
+    // Build filter
+    let filter = {};
+    if (status) {
+      filter.status = status;
+    }
+    
+    // Get all orders
+    const orders = await Order.find(filter)
+      .sort({ createdAt: -1 })
+      .populate('items.productId', 'name category brand');
+    
+    res.json(orders);
+    
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    res.status(500).json({ message: 'Failed to fetch orders' });
+  }
+});
+
+/**
+ * PUT /api/admin/orders/:id
+ * Update order status (Admin only)
+ * 
+ * @param {string} id - Order's MongoDB ObjectId
+ * @body {string} email - Admin's email for verification
+ * @body {string} status - New order status
+ * 
+ * @returns {Object} Updated order object
+ */
+app.put('/api/admin/orders/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { email, status } = req.body;
+    
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid order ID format' });
+    }
+    
+    // Admin verification
+    const user = await User.findOne({ email: email?.toLowerCase() });
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    
+    // Validate status
+    const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Invalid order status' });
+    }
+    
+    // Update order status
+    const updatedOrder = await Order.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true, runValidators: true }
+    ).populate('items.productId', 'name category brand');
+    
+    if (!updatedOrder) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    
+    res.json({ 
+      message: 'Order status updated successfully', 
+      order: updatedOrder 
+    });
+    
+  } catch (error) {
+    console.error('Error updating order:', error);
+    res.status(500).json({ message: 'Failed to update order' });
   }
 });
 

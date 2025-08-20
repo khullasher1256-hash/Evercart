@@ -714,74 +714,240 @@
         }
       };
 
-      // Proceed to checkout
-      window.proceedToCheckout = async function() {
+      // Proceed to checkout - show checkout form
+      window.proceedToCheckout = function() {
         if (!cartData.items || cartData.items.length === 0) {
           alert('Your cart is empty!');
           return;
         }
 
+        showCheckoutForm();
+      };
+
+      // Show checkout form with delivery address
+      function showCheckoutForm() {
+        const subtotal = cartData.items.reduce((total, item) => {
+          return total + (item.productId.price * item.quantity);
+        }, 0);
+        const shipping = subtotal > 50 ? 0 : 9.99;
+        const total = subtotal + shipping;
+
+        cartContent.innerHTML = `
+          <div style="grid-column: 1 / -1;">
+            <div style="background: #fff; border-radius: 16px; padding: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
+              <div class="cart-items-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 style="color: #333; font-size: 2rem; margin: 0;">🚚 Checkout</h2>
+                <button onclick="fetchCart()" style="background: #6c757d; color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;">← Back to Cart</button>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 350px; gap: 2rem;">
+                <!-- Delivery Address Form -->
+                <div>
+                  <h3 style="color: #333; margin-bottom: 1rem;">📍 Delivery Address</h3>
+                  <form id="checkout-form" style="display: grid; gap: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                      <div>
+                        <label style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 600;">Full Name *</label>
+                        <input type="text" id="fullName" required style="width: 100%; padding: 0.8rem; border: 2px solid #e9ecef; border-radius: 8px; font-size: 1rem; box-sizing: border-box;">
+                      </div>
+                      <div>
+                        <label style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 600;">Phone Number *</label>
+                        <input type="tel" id="phone" required style="width: 100%; padding: 0.8rem; border: 2px solid #e9ecef; border-radius: 8px; font-size: 1rem; box-sizing: border-box;">
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 600;">Address *</label>
+                      <textarea id="address" required rows="3" style="width: 100%; padding: 0.8rem; border: 2px solid #e9ecef; border-radius: 8px; font-size: 1rem; resize: vertical; box-sizing: border-box;"></textarea>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                      <div>
+                        <label style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 600;">City *</label>
+                        <input type="text" id="city" required style="width: 100%; padding: 0.8rem; border: 2px solid #e9ecef; border-radius: 8px; font-size: 1rem; box-sizing: border-box;">
+                      </div>
+                      <div>
+                        <label style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 600;">State *</label>
+                        <input type="text" id="state" required style="width: 100%; padding: 0.8rem; border: 2px solid #e9ecef; border-radius: 8px; font-size: 1rem; box-sizing: border-box;">
+                      </div>
+                      <div>
+                        <label style="display: block; margin-bottom: 0.5rem; color: #333; font-weight: 600;">ZIP Code *</label>
+                        <input type="text" id="zipCode" required style="width: 100%; padding: 0.8rem; border: 2px solid #e9ecef; border-radius: 8px; font-size: 1rem; box-sizing: border-box;">
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 style="color: #333; margin: 2rem 0 1rem 0;">💳 Payment Method</h3>
+                      <div style="display: grid; gap: 0.5rem;">
+                        <label style="display: flex; align-items: center; padding: 0.8rem; border: 2px solid #e9ecef; border-radius: 8px; cursor: pointer; transition: all 0.2s;" onclick="this.style.background='#f8f9ff'; this.style.borderColor='#667eea'; document.querySelectorAll('label').forEach(l => { if (l !== this) { l.style.background=''; l.style.borderColor='#e9ecef'; } })">
+                          <input type="radio" name="paymentMethod" value="cash_on_delivery" checked style="margin-right: 0.8rem;">
+                          <span>💵 Cash on Delivery (COD)</span>
+                        </label>
+                        <label style="display: flex; align-items: center; padding: 0.8rem; border: 2px solid #e9ecef; border-radius: 8px; cursor: pointer; transition: all 0.2s;" onclick="this.style.background='#f8f9ff'; this.style.borderColor='#667eea'; document.querySelectorAll('label').forEach(l => { if (l !== this) { l.style.background=''; l.style.borderColor='#e9ecef'; } })">
+                          <input type="radio" name="paymentMethod" value="card" style="margin-right: 0.8rem;">
+                          <span>💳 Credit/Debit Card</span>
+                        </label>
+                        <label style="display: flex; align-items: center; padding: 0.8rem; border: 2px solid #e9ecef; border-radius: 8px; cursor: pointer; transition: all 0.2s;" onclick="this.style.background='#f8f9ff'; this.style.borderColor='#667eea'; document.querySelectorAll('label').forEach(l => { if (l !== this) { l.style.background=''; l.style.borderColor='#e9ecef'; } })">
+                          <input type="radio" name="paymentMethod" value="upi" style="margin-right: 0.8rem;">
+                          <span>📱 UPI Payment</span>
+                        </label>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+
+                <!-- Order Summary -->
+                <div style="background: #f8f9fa; padding: 2rem; border-radius: 16px; height: fit-content; position: sticky; top: 2rem;">
+                  <h3 style="color: #333; margin-bottom: 1.5rem;">📋 Order Summary</h3>
+                  
+                  <div style="margin-bottom: 1.5rem; max-height: 300px; overflow-y: auto;">
+                    ${cartData.items.map(item => `
+                      <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem; padding: 0.8rem; background: white; border-radius: 8px;">
+                        <img src="${item.productId.image}" alt="${item.productId.name}" style="width: 40px; height: 40px; object-fit: contain; border-radius: 6px;">
+                        <div style="flex: 1; font-size: 0.9rem;">
+                          <div style="font-weight: 600; color: #333;">${item.productId.name}</div>
+                          <div style="color: #666;">Qty: ${item.quantity} × $${item.productId.price.toFixed(2)}</div>
+                        </div>
+                        <div style="font-weight: 600; color: #27ae60;">$${(item.productId.price * item.quantity).toFixed(2)}</div>
+                      </div>
+                    `).join('')}
+                  </div>
+                  
+                  <div style="border-top: 2px solid #e9ecef; padding-top: 1rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                      <span>Subtotal:</span>
+                      <span style="font-weight: 600;">$${subtotal.toFixed(2)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                      <span>Shipping:</span>
+                      <span style="font-weight: 600; color: ${shipping === 0 ? '#27ae60' : '#333'};">${shipping === 0 ? 'FREE' : '$' + shipping.toFixed(2)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: 700; color: #667eea; padding-top: 0.8rem; border-top: 1px solid #e9ecef;">
+                      <span>Total:</span>
+                      <span>$${total.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  <button onclick="completeOrder()" id="complete-order-btn" style="width: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; padding: 1rem 2rem; border-radius: 12px; font-size: 1.1rem; font-weight: 600; cursor: pointer; margin-top: 1.5rem; transition: all 0.3s ease;">
+                    <span class="loading-spinner" id="order-spinner" style="display: none;"></span>
+                    <span>Complete Order</span>
+                  </button>
+                  
+                  ${subtotal < 50 ? `
+                    <div style="text-align: center; margin-top: 1rem; padding: 1rem; background: #fff3cd; border-radius: 8px; color: #856404; font-size: 0.9rem;">
+                      💡 Add $${(50 - subtotal).toFixed(2)} more to get free shipping!
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // Auto-fill user name if available
+        if (user && user.name) {
+          document.getElementById('fullName').value = user.name;
+        }
+      }
+
+      // Complete order function
+      window.completeOrder = async function() {
+        const form = document.getElementById('checkout-form');
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+
+        // Get form data
+        const deliveryAddress = {
+          fullName: document.getElementById('fullName').value.trim(),
+          phone: document.getElementById('phone').value.trim(),
+          address: document.getElementById('address').value.trim(),
+          city: document.getElementById('city').value.trim(),
+          state: document.getElementById('state').value.trim(),
+          zipCode: document.getElementById('zipCode').value.trim()
+        };
+
+        const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+
         // Show loading state
-        const checkoutBtn = document.getElementById('checkout-btn');
-        const spinner = document.getElementById('checkout-spinner');
-        checkoutBtn.disabled = true;
+        const orderBtn = document.getElementById('complete-order-btn');
+        const spinner = document.getElementById('order-spinner');
+        orderBtn.disabled = true;
         spinner.style.display = 'inline-block';
-        checkoutBtn.innerHTML = `
+        orderBtn.innerHTML = `
           <span class="loading-spinner" style="display: inline-block;"></span>
-          <span>Processing...</span>
+          <span>Processing Order...</span>
         `;
 
         try {
-          // Calculate totals
-          const subtotal = cartData.items.reduce((total, item) => {
-            return total + (item.productId.price * item.quantity);
-          }, 0);
-          const tax = subtotal * 0.08;
-          const shipping = subtotal > 50 ? 0 : 9.99;
-          const total = subtotal + tax + shipping;
-          
-          // Generate order ID
-          const orderId = `EC${Date.now()}`;
+          // Create order
+          const response = await fetch('/api/orders', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              userEmail: user.email,
+              deliveryAddress,
+              paymentMethod
+            })
+          });
 
-          // Simulate processing delay
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          // Clear the cart first (before showing success message)
-          await clearCart();
-          
-          // Update local cart data to reflect clearing
-          cartData.items = [];
-          
-          // Show checkout success
-          cartContent.innerHTML = `
-            <div class="empty-cart">
-              <div class="empty-cart-icon">✅</div>
-              <h3>Order Placed Successfully!</h3>
-              <p>Thank you for your purchase. Your order total was <strong>$${total.toFixed(2)}</strong></p>
-              <p>Order confirmation has been sent to your email.</p>
-              <p><strong>Order ID:</strong> ${orderId}</p>
-              <div style="margin-top: 2rem;">
-                <a href="index.html" class="shop-now-btn">Continue Shopping</a>
-                <button onclick="window.location.reload()" class="continue-shopping" style="margin-top: 1rem; display: inline-block;">View Cart Again</button>
+          const result = await response.json();
+
+          if (response.ok) {
+            // Show success message
+            cartContent.innerHTML = `
+              <div class="empty-cart">
+                <div class="empty-cart-icon">✅</div>
+                <h3>Order Placed Successfully!</h3>
+                <p>Thank you for your purchase! Your order has been confirmed.</p>
+                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; margin: 1.5rem 0; text-align: left;">
+                  <p><strong>Order ID:</strong> #${result.order._id.slice(-8).toUpperCase()}</p>
+                  <p><strong>Total:</strong> $${result.order.totalAmount.toFixed(2)}</p>
+                  <p><strong>Payment:</strong> ${formatPaymentMethod(result.order.paymentMethod)}</p>
+                  <p><strong>Status:</strong> <span style="color: #856404; background: #fff3cd; padding: 0.2rem 0.5rem; border-radius: 4px;">Pending</span></p>
+                </div>
+                <p>Order confirmation has been sent to <strong>${user.email}</strong></p>
+                <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                  <a href="order-history.html" class="shop-now-btn">View Order History</a>
+                  <a href="index.html" class="continue-shopping" style="display: inline-block; text-decoration: none;">Continue Shopping</a>
+                </div>
               </div>
-            </div>
-          `;
-          
-          showNotification('Order placed successfully!', 'success');
-          
+            `;
+            
+            showNotification('Order placed successfully!', 'success');
+          } else {
+            throw new Error(result.message || 'Failed to place order');
+          }
         } catch (error) {
-          console.error('Checkout error:', error);
+          console.error('Order error:', error);
           
           // Reset button state on error
-          checkoutBtn.disabled = false;
-          checkoutBtn.innerHTML = `
+          orderBtn.disabled = false;
+          orderBtn.innerHTML = `
             <span class="loading-spinner"></span>
-            <span>Proceed to Checkout</span>
+            <span>Complete Order</span>
           `;
           
-          showNotification('Checkout failed. Please try again.', 'error');
+          showNotification(error.message || 'Failed to place order. Please try again.', 'error');
         }
       };
+
+      // Format payment method for display
+      function formatPaymentMethod(method) {
+        switch(method) {
+          case 'cash_on_delivery':
+            return '💵 Cash on Delivery';
+          case 'card':
+            return '💳 Card Payment';
+          case 'upi':
+            return '📱 UPI Payment';
+          default:
+            return method;
+        }
+      }
 
       // Clear cart after successful checkout
       async function clearCart() {
